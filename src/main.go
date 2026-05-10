@@ -1,6 +1,10 @@
 package main
 
 import (
+    "bytes"
+    "encoding/json"
+    "net/http"
+
 	"database/sql"
 	"flag"
 	"fmt"
@@ -100,6 +104,9 @@ func main() {
 
 	// the corresponding fasthttp code
 	router := func(ctx *fasthttp.RequestCtx) {
+        //Logging requests
+	    sendLog(fmt.Sprintf("Request: %s %s", ctx.Method(), ctx.Path()))
+	    
 		switch string(ctx.Path()) {
 		case "/":
 			img(ctx)
@@ -273,4 +280,16 @@ func mq() {
 
 	log.Printf("Listening on [%s]: %s port: %s", subj, Environment, *AppPort)
 
+}
+
+func sendLog(message string) {
+    logData := map[string]string{
+        "service": "go-demo-app",
+        "message": message,
+    }
+
+    body, _ := json.Marshal(logData)
+
+    // URL of Logstash service in Kubernetes
+    http.Post("http://logstash.logging.svc.cluster.local:8080", "application/json", bytes.NewBuffer(body))
 }
